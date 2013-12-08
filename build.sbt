@@ -1,7 +1,7 @@
 import sbt._
 import Keys._
 
-name := "sbt.plugin.trivia-build"
+name := "sbt-plugin-trivia-build"
 
 organization := "dk.reportsoft"
 
@@ -12,3 +12,5 @@ sbtPlugin := true
 EclipseKeys.createSrc := EclipseCreateSrc.Default + EclipseCreateSrc.Resource
 
 libraryDependencies += "com.typesafe" % "config" % "1.0.2"
+
+publishMavenStyle := true
