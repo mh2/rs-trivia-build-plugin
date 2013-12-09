@@ -76,7 +76,42 @@ object TriviaBuildPlugin extends Plugin {
       IO.writeLines(shutdownPlayFile, List("call " + setEnvFile.getName, "set /p pid=<RUNNING_PID", "taskkill.exe /PID %pid% /F /T", "del RUNNING_PID"), IO.utf8, false)
 
     }
+    
+    def createLinuxScripts(outputFolder: java.io.File, linuxJDKPath: java.io.File, playPath: java.io.File) {
+      val hashBang = """#!/bin/bash"""
+      val setJava = "PATH=$(dirname $0)/" + linuxJDKPath.getName + "/bin:$PATH"
+      val setPlay = "PATH=$(dirname $0)/" + playPath.getName + ":$PATH"
+      def withBangAndPath(bottomLines: String*) = {
+        val res = hashBang :: setJava :: setPlay :: bottomLines.toList
+        //println("---")
+        //res foreach println
+        //println
+        res
+      }
+      
+      val startPlayFile = new File(outputFolder, "start.sh")
+      startPlayFile.createNewFile()
+      IO.writeLines(
+        startPlayFile,
+        withBangAndPath("""   play "start 9000"   """.trim),
+        IO.utf8,
+        false
+      )
 
+      val shutdownPlayFile = new File(outputFolder, "shutdown.sh")
+      shutdownPlayFile.createNewFile()
+      IO.writeLines(
+        shutdownPlayFile,
+        withBangAndPath(
+          """PID_FILE=$(dirname $0)/RUNNING_PID""",
+          """PID=$(cat $PID_FILE)""",
+          """kill -9 $(pstree -p $PID | grep -oP '(?<=\()[0-9]+(?=\))')""", //TODO consider being less brutal
+          """rm -f $PID_FILE"""
+        ),
+        IO.utf8,
+        false
+      )
+    }    
   }
 
   object AuxConstants {
@@ -156,6 +191,8 @@ object TriviaBuildPlugin extends Plugin {
         // Create scripts
         println("Creating Windows bat scripts")
         AuxUtils.createWindowsScripts(outputFolder, winJDKOutputFolder, playOutputFolder)
+        println("Creating Linux shell scripts")
+        AuxUtils.createLinuxScripts(outputFolder, linuxJDKOutputFolder, playOutputFolder)
       }
     }))
 
